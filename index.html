@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro Ore Lavorative (con Salvataggio Automatico)</title>
+    
+    <!-- CSS Incorporato -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 40px;
+        }
+
+        @media (min-width: 768px) {
+            .grid-container {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 25px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 15px;
+        }
+
+        header h1 { margin: 0; color: #2c3e50; }
+        .form-group, .client-management-form div { margin-bottom: 15px; }
+        .form-group label, .client-management-form label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        input[type="date"], input[type="time"], input[type="text"], select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+
+        .form-row { display: flex; gap: 15px; }
+        .form-row .form-group { flex: 1; }
+
+        .btn {
+            display: inline-block;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            text-align: center;
+            width: 100%;
+            margin-top: 10px;
+            transition: background-color 0.3s;
+        }
+
+        .btn-primary { background-color: #3498db; color: white; }
+        .btn-primary:hover { background-color: #2980b9; }
+        .btn-secondary { background-color: #2ecc71; color: white; }
+        .btn-secondary:hover { background-color: #27ae60; }
+        .btn-danger { background-color: #e74c3c; color: white; padding: 5px 10px; font-size: 14px; width: auto; }
+
+        .section { margin-top: 40px; }
+        .section h2 { text-align: center; color: #2c3e50; }
+        .table-container { overflow-x: auto; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #ecf0f1; }
+        tbody tr:hover { background-color: #f9f9f9; }
+
+        #client-list { list-style: none; padding: 0; }
+        #client-list li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Registro Ore</h1>
+            <p>Aggiungi clienti e registra le tue sessioni di lavoro.</p>
+        </header>
+
+        <div class="grid-container">
+            <!-- Colonna Sinistra: Gestione Clienti e Form -->
+            <div>
+                <div class="client-management-form">
+                    <h2>Gestione Clienti</h2>
+                    <form id="add-client-form">
+                        <div>
+                            <label for="new-client-name">Nome Nuovo Cliente</label>
+                            <input type="text" id="new-client-name" placeholder="Es. Mario Rossi" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="background-color: #9b59b6;">Aggiungi Cliente</button>
+                    </form>
+                    <h3>Clienti Esistenti</h3>
+                    <ul id="client-list">
+                        <!-- Lista clienti generata da JS -->
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Colonna Destra: Form Inserimento Ore -->
+            <div>
+                <h2>Aggiungi Registro</h2>
+                <form id="work-log-form">
+                    <div class="form-group">
+                        <label for="date">Data</label>
+                        <input type="date" id="date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="client-select">Seleziona Cliente</label>
+                        <select id="client-select" required>
+                            <option value="">-- Seleziona un cliente --</option>
+                        </select>
+                    </div>
+                     <div class="form-group">
+                        <label for="description">Descrizione Attività</label>
+                        <input type="text" id="description" placeholder="Es. Montaggio video primo taglio" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="start-time">Ora Inizio</label>
+                            <input type="time" id="start-time" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="end-time">Ora Fine</label>
+                            <input type="time" id="end-time" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Aggiungi Registro</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Sezione Archivio -->
+        <div class="section">
+            <h2>Archivio Storico</h2>
+            <div class="form-group">
+                <label for="filter-client">Filtra per Cliente</label>
+                <select id="filter-client">
+                    <option value="all">Tutti i Clienti</option>
+                </select>
+            </div>
+            <button id="export-csv" class="btn btn-secondary">Esporta Vista Corrente in Excel (CSV)</button>
+            <div class="table-container">
+                <table id="work-log-table">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Cliente</th>
+                            <th>Descrizione</th>
+                            <th>Inizio</th>
+                            <th>Fine</th>
+                            <th>Durata</th>
+                            <th>Azione</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Righe generate da JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Incorporato -->
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // Elementi del DOM
+        const addClientForm = document.getElementById('add-client-form');
+        const newClientNameInput = document.getElementById('new-client-name');
+        const clientListUl = document.getElementById('client-list');
+        const clientSelect = document.getElementById('client-select');
+        const filterClientSelect = document.getElementById('filter-client');
+        
+        const workLogForm = document.getElementById('work-log-form');
+        const workLogTableBody = document.querySelector('#work-log-table tbody');
+        const exportBtn = document.getElementById('export-csv');
+        const formInputs = workLogForm.querySelectorAll('input, select');
+
+        // --- GESTIONE BOZZA (NUOVA FUNZIONE) ---
+        function saveDraft() {
+            const draft = {
+                date: document.getElementById('date').value,
+                client: document.getElementById('client-select').value,
+                description: document.getElementById('description').value,
+                startTime: document.getElementById('start-time').value,
+                endTime: document.getElementById('end-time').value,
+            };
+            localStorage.setItem('workLogDraft', JSON.stringify(draft));
+        }
+
+        function loadDraft() {
+            const draft = JSON.parse(localStorage.getItem('workLogDraft'));
+            if (draft) {
+                document.getElementById('date').value = draft.date;
+                document.getElementById('client-select').value = draft.client;
+                document.getElementById('description').value = draft.description;
+                document.getElementById('start-time').value = draft.startTime;
+                document.getElementById('end-time').value = draft.endTime;
+            }
+        }
+
+        function clearDraft() {
+            localStorage.removeItem('workLogDraft');
+        }
+
+        // Salva la bozza a ogni modifica di un campo del form
+        formInputs.forEach(input => {
+            input.addEventListener('input', saveDraft);
+        });
+
+        // --- GESTIONE CLIENTI ---
+        function getClients() { return JSON.parse(localStorage.getItem('clients')) || []; }
+        function saveClients(clients) { localStorage.setItem('clients', JSON.stringify(clients)); }
+
+        function renderClients() {
+            const clients = getClients();
+            clientListUl.innerHTML = '';
+            clientSelect.innerHTML = '<option value="">-- Seleziona un cliente --</option>';
+            filterClientSelect.innerHTML = '<option value="all">Tutti i Clienti</option>';
+
+            clients.sort().forEach(client => {
+                const li = document.createElement('li');
+                li.textContent = client;
+                const deleteBtn = document.createElement('button');
+                deleteBtn.textContent = 'Elimina';
+                deleteBtn.className = 'btn btn-danger';
+                deleteBtn.onclick = () => deleteClient(client);
+                li.appendChild(deleteBtn);
+                clientListUl.appendChild(li);
+
+                const optionForm = document.createElement('option');
+                optionForm.value = client;
+                optionForm.textContent = client;
+                clientSelect.appendChild(optionForm);
+                
+                const optionFilter = document.createElement('option');
+                optionFilter.value = client;
+                optionFilter.textContent = client;
+                filterClientSelect.appendChild(optionFilter);
+            });
+        }
+        
+        addClientForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const newClientName = newClientNameInput.value.trim();
+            if (newClientName) {
+                const clients = getClients();
+                if (!clients.includes(newClientName)) {
+                    clients.push(newClientName);
+                    saveClients(clients);
+                    renderClients();
+                    newClientNameInput.value = '';
+                } else {
+                    alert('Questo cliente esiste già.');
+                }
+            }
+        });
+
+        window.deleteClient = function(clientNameToDelete) {
+            if (confirm(`Sei sicuro di voler eliminare il cliente "${clientNameToDelete}"? Questa azione non cancellerà i registri ore già associati.`)) {
+                let clients = getClients();
+                clients = clients.filter(c => c !== clientNameToDelete);
+                saveClients(clients);
+                renderClients();
+            }
+        };
+
+        // --- GESTIONE REGISTRI ORE ---
+        function getLogs() {
+            const logs = JSON.parse(localStorage.getItem('workLogs')) || [];
+            return logs.sort((a, b) => new Date(b.date + 'T' + b.startTime) - new Date(a.date + 'T' + a.startTime));
+        }
+
+        function saveLog(log) {
+            const logs = getLogs();
+            logs.push(log);
+            localStorage.setItem('workLogs', JSON.stringify(logs));
+        }
+
+        function renderLogs() {
+            workLogTableBody.innerHTML = '';
+            const allLogs = getLogs();
+            const filterValue = filterClientSelect.value;
+            const filteredLogs = allLogs.filter(log => filterValue === 'all' || log.client === filterValue);
+            filteredLogs.forEach(log => addLogToTable(log));
+        }
+        
+        function addLogToTable(log) {
+            const row = document.createElement('tr');
+            row.dataset.id = log.id;
+            const duration = calculateDuration(log.startTime, log.endTime);
+            row.innerHTML = `
+                <td>${formatDate(log.date)}</td>
+                <td>${log.client}</td>
+                <td>${log.description}</td>
+                <td>${log.startTime}</td>
+                <td>${log.endTime}</td>
+                <td>${duration}</td>
+                <td><button class="btn btn-danger" onclick="deleteLog(${log.id})">Elimina</button></td>
+            `;
+            workLogTableBody.appendChild(row);
+        }
+        
+        workLogForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const log = {
+                id: Date.now(),
+                date: document.getElementById('date').value,
+                client: document.getElementById('client-select').value,
+                description: document.getElementById('description').value,
+                startTime: document.getElementById('start-time').value,
+                endTime: document.getElementById('end-time').value,
+            };
+
+            if (log.endTime <= log.startTime) {
+                alert("L'orario di fine deve essere successivo a quello di inizio.");
+                return;
+            }
+
+            saveLog(log);
+            renderLogs();
+            workLogForm.reset();
+            clearDraft(); // Pulisci la bozza dopo il salvataggio
+            setDefaultDate();
+        });
+
+        window.deleteLog = function(id) {
+            if (confirm("Sei sicuro di voler eliminare questa riga?")) {
+                let logs = getLogs();
+                logs = logs.filter(log => log.id !== id);
+                localStorage.setItem('workLogs', JSON.stringify(logs));
+                renderLogs();
+            }
+        }
+        
+        filterClientSelect.addEventListener('change', renderLogs);
+
+        // --- FUNZIONI DI UTILITÀ E ESPORTAZIONE ---
+        function calculateDuration(start, end) {
+            const startDate = new Date(`1970-01-01T${start}:00`);
+            const endDate = new Date(`1970-01-01T${end}:00`);
+            let diff = endDate.getTime() - startDate.getTime();
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff / (1000 * 60)) % 60);
+            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+        }
+        
+        function formatDate(dateString) {
+            const [year, month, day] = dateString.split('-');
+            return `${day}/${month}/${year}`;
+        }
+
+        function setDefaultDate() {
+            const dateInput = document.getElementById('date');
+            if (!dateInput.value) {
+                const today = new Date();
+                dateInput.value = today.toISOString().slice(0, 10);
+            }
+        }
+        
+        exportBtn.addEventListener('click', () => {
+            const allLogs = getLogs();
+            const filterValue = filterClientSelect.value;
+            const logsToExport = allLogs.filter(log => filterValue === 'all' || log.client === filterValue);
+
+            if (logsToExport.length === 0) {
+                alert("Nessun dato da esportare per la selezione corrente.");
+                return;
+            }
+
+            const headers = ['Data', 'Cliente', 'Descrizione', 'Ora Inizio', 'Ora Fine', 'Durata (HH:MM)'];
+            let csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n";
+            let totalMinutes = 0;
+
+            logsToExport.forEach(log => {
+                const duration = calculateDuration(log.startTime, log.endTime);
+                const [hours, minutes] = duration.split(':').map(Number);
+                totalMinutes += hours * 60 + minutes;
+                const description = log.description.includes(',') ? `"${log.description}"` : log.description;
+                const row = [formatDate(log.date), log.client, description, log.startTime, log.endTime, duration];
+                csvContent += row.join(",") + "\n";
+            });
+
+            const totalHours = Math.floor(totalMinutes / 60);
+            const remainingMinutes = totalMinutes % 60;
+            const totalDurationStr = `${String(totalHours).padStart(2, '0')}:${String(remainingMinutes).padStart(2, '0')}`;
+            csvContent += `\n,,,,Totale Ore:,${totalDurationStr}\n`;
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `registro_ore_${filterValue}_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+
+        // Inizializzazione
+        renderClients();
+        renderLogs();
+        setDefaultDate();
+        loadDraft(); // Carica la bozza all'avvio
+    });
+    </script>
+
+</body>
+</html>
